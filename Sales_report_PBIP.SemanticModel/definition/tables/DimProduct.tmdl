@@ -1,0 +1,59 @@
+table DimProduct
+	lineageTag: b63c74e3-883e-4f62-ad65-a1651124815b
+
+	column Total_products_
+		dataType: int64
+		formatString: 0
+		lineageTag: e35195b2-807f-4d51-988d-ef2bf2ebe57c
+		summarizeBy: none
+		sourceColumn: Total_products_
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: 2a872011-1dcf-433d-bce1-73752e7aca7a
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductID
+		dataType: string
+		lineageTag: 3e263ba3-da64-4b3b-b934-46a188354843
+		summarizeBy: none
+		sourceColumn: ProductID
+
+		annotation SummarizationSetBy = Automatic
+
+	column sub_category
+		dataType: string
+		lineageTag: d501b18a-71be-49e4-be9c-c17ef454d4a2
+		summarizeBy: none
+		sourceColumn: sub_category
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_name
+		dataType: string
+		lineageTag: 33f1a288-4f53-4fad-b137-dae0eca822e9
+		summarizeBy: none
+		sourceColumn: product_name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimProduct = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\pramo\OneDrive\Documents\NIT task\product_data.csv"),[Delimiter=",", Columns=5, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"total_products_", Int64.Type}, {"category", type text}, {"product_id", type text}, {"sub_category", type text}, {"product_name", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"product_id", "ProductID"}, {"total_products_", "Total_products_"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

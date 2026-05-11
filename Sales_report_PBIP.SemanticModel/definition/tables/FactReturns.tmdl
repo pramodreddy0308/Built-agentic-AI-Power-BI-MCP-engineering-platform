@@ -1,0 +1,39 @@
+table FactReturns
+	lineageTag: e24429bd-fc7f-4c0f-989d-e183258c91c7
+
+	measure 'Total Returns' = COUNT(FactReturns[OrderID])
+		formatString: 0
+		lineageTag: d8857d7e-2ee1-4036-83db-8935c881743e
+
+	column Returned
+		dataType: string
+		lineageTag: a0ab7655-a0c7-4a3f-80cf-8ec9f30ce8f2
+		summarizeBy: none
+		sourceColumn: Returned
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderID
+		dataType: string
+		lineageTag: 76dbc28c-e21c-4a24-b390-91f4867361c7
+		summarizeBy: none
+		sourceColumn: OrderID
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FactReturns = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\pramo\OneDrive\Documents\NIT task\returns_data.csv"),[Delimiter=",", Columns=2, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"returned", type text}, {"order_id", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type1",{{"order_id", "OrderID"}, {"returned", "Returned"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

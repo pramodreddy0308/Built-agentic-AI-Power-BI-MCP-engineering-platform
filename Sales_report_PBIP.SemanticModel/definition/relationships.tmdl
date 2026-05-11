@@ -1,0 +1,30 @@
+relationship d719e938-16ea-4aec-8f5d-97abc38ece5a
+	joinOnDateBehavior: datePartOnly
+	fromColumn: FactOrders.ShipDate
+	toColumn: LocalDateTable_d878242e-0b28-47c0-8505-09b7101077d1.Date
+
+relationship 0f7437d0-194e-4fb9-950c-a5f489ce92cc
+	joinOnDateBehavior: datePartOnly
+	fromColumn: FactOrders.OrderDate
+	toColumn: LocalDateTable_04fbbe54-d29e-4d06-b9db-4fa7dd0ed13d.Date
+
+relationship 65ba1613-9834-d445-57cd-ea3815d24fdb
+	fromColumn: FactOrders.CustomerID
+	toColumn: DimCustomer.CustomerID
+
+relationship 421fe48b-b84f-9d8f-ce1d-e70c3202572b
+	fromColumn: FactOrders.ProductID
+	toColumn: DimProduct.ProductID
+
+relationship 5becc878-0be7-ed01-9c2e-5484358bf6df
+	fromColumn: FactOrders.OrderID
+	toColumn: FactReturns.OrderID
+
+relationship 54bd86b9-f353-2bb4-2d0c-c735ea289a80
+	fromColumn: FactOrders.PostalCode
+	toColumn: DimLocation.PostalCode
+
+relationship a46b7e5b-ddb0-860d-9536-7c37bc0c4bc4
+	fromColumn: DimLocation.Region
+	toColumn: DimRegionalManager.Region
+

@@ -1,0 +1,35 @@
+table DimRegionalManager
+	lineageTag: baedf761-dc82-4296-a125-4a0834c34242
+
+	column Regional_manager
+		dataType: string
+		lineageTag: 60368626-7858-4795-b53d-cfea6fa35c9f
+		summarizeBy: none
+		sourceColumn: Regional_manager
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: fde2a336-3bdf-4295-a252-11d3e344fd20
+		summarizeBy: none
+		sourceColumn: Region
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimRegionalManager = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\pramo\OneDrive\Documents\NIT task\regional_manager_data.csv"),[Delimiter=",", Columns=2, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"regional_manager", type text}, {"region_they_managed", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type1",{{"region_they_managed", "Region"}, {"regional_manager", "Regional_manager"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

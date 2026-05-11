@@ -1,0 +1,61 @@
+table DimLocation
+	lineageTag: 1aefdc0a-ef02-42a4-bdbc-8591b4b18948
+
+	column City
+		dataType: string
+		lineageTag: 8c1294c0-50e3-4b3c-94ef-13800c22f37d
+		summarizeBy: none
+		sourceColumn: City
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 091b880b-b7be-4624-9973-3fccba637f67
+		summarizeBy: none
+		sourceColumn: Region
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column PostalCode
+		dataType: string
+		lineageTag: f289aae2-8d73-4047-a7f4-7295ea1082db
+		summarizeBy: none
+		sourceColumn: PostalCode
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Country_Region
+		dataType: string
+		lineageTag: 1a9aa063-729a-48b9-8611-355b91573f2b
+		summarizeBy: none
+		sourceColumn: Country_Region
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimLocation = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\pramo\OneDrive\Documents\NIT task\location_data.csv"),[Delimiter=",", Columns=4, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"city", type text}, {"region", type text}, {"postal_code", type text}, {"country_region", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type1",{{"city", "City"}, {"region", "Region"}, {"postal_code", "PostalCode"}, {"country_region", "Country_Region"}})
+				in
+				    #"Renamed Columns"
+
+	changedProperty = IsHidden
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

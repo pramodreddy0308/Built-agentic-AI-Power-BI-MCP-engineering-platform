@@ -1,0 +1,179 @@
+table FactOrders
+	lineageTag: 47def7c2-eb89-4d66-a9de-896212db5459
+
+	measure 'Total Orders' = DISTINCTCOUNT(FactOrders[OrderID])
+		formatString: 0
+		lineageTag: d1e265d9-0256-4602-96ae-232df5cc8add
+
+	column total_sales_
+		dataType: double
+		lineageTag: fbc502ae-7067-437c-9f93-1cdf2ffd48c0
+		summarizeBy: sum
+		sourceColumn: total_sales_
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column total_quantity_sold_
+		dataType: int64
+		formatString: 0
+		lineageTag: a96232a6-83fd-4dcf-81d5-9150dd191909
+		summarizeBy: sum
+		sourceColumn: total_quantity_sold_
+
+		annotation SummarizationSetBy = Automatic
+
+	column average_sales_
+		dataType: double
+		lineageTag: d60ba69a-1ba8-4c41-a22b-4c440834305a
+		summarizeBy: sum
+		sourceColumn: average_sales_
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column average_quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: c690781c-f7f5-4479-9e0e-135a82d24a46
+		summarizeBy: sum
+		sourceColumn: average_quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column discount
+		dataType: double
+		lineageTag: 16b0d8b5-e6f0-4b4b-9945-84c54021588f
+		summarizeBy: sum
+		sourceColumn: discount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OrderID
+		dataType: string
+		lineageTag: a946d16e-0881-43d5-985a-d804f698999c
+		summarizeBy: none
+		sourceColumn: OrderID
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductID
+		dataType: string
+		lineageTag: af8fcf5f-0d71-4a24-92d1-d73e7ada7666
+		summarizeBy: none
+		sourceColumn: ProductID
+
+		annotation SummarizationSetBy = Automatic
+
+	column RowID
+		dataType: string
+		lineageTag: 98f5a0e7-40a3-4ca4-a862-fe289269027f
+		summarizeBy: none
+		sourceColumn: RowID
+
+		annotation SummarizationSetBy = Automatic
+
+	column ShipDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 8bed202e-1304-4054-a06f-1f9147937a27
+		summarizeBy: none
+		sourceColumn: ShipDate
+
+		variation Variation
+			isDefault
+			relationship: d719e938-16ea-4aec-8f5d-97abc38ece5a
+			defaultHierarchy: LocalDateTable_d878242e-0b28-47c0-8505-09b7101077d1.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Profit
+		dataType: double
+		lineageTag: 71f8a40c-b59c-44cc-8fdb-2a411193ddbe
+		summarizeBy: sum
+		sourceColumn: Profit
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: cd51d6cf-4dc4-4d5a-a837-c422d59d4c6e
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column ShipMode
+		dataType: string
+		lineageTag: 87625d4e-5dd6-4026-8dd3-b6cfb0aa4614
+		summarizeBy: none
+		sourceColumn: ShipMode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales
+		dataType: double
+		lineageTag: a0ae48eb-5e0b-44cd-a7e4-09db7ed9de79
+		summarizeBy: sum
+		sourceColumn: Sales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PostalCode
+		dataType: string
+		lineageTag: 62aaff1c-6acb-4a45-8534-692c2a272aac
+		summarizeBy: none
+		sourceColumn: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: c4ced7eb-90fd-452d-b26f-e23eb247e1d4
+		summarizeBy: none
+		sourceColumn: OrderDate
+
+		variation Variation
+			isDefault
+			relationship: 0f7437d0-194e-4fb9-950c-a5f489ce92cc
+			defaultHierarchy: LocalDateTable_04fbbe54-d29e-4d06-b9db-4fa7dd0ed13d.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column CustomerID
+		dataType: string
+		lineageTag: a872c1e3-03e2-4c90-949b-9597b869fe21
+		summarizeBy: none
+		sourceColumn: CustomerID
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FactOrders = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\pramo\OneDrive\Documents\NIT task\orders_export.csv"),[Delimiter=",", Columns=16, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"total_sales_", type number}, {"total_quantity_sold_", Int64.Type}, {"average_sales_", type number}, {"average_quantity_per_order_", Int64.Type}, {"discount", type number}, {"order_id_for_order", type text}, {"product_id_for_order", type text}, {"row_id", type text}, {"ship_date", type date}, {"profit", type number}, {"quantity", Int64.Type}, {"ship_mode", type text}, {"sales", type number}, {"postal_code_for_order", type text}, {"order_date", type date}, {"customer_id_for_order", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"customer_id_for_order", "CustomerID"}, {"product_id_for_order", "ProductID"}, {"order_id_for_order", "OrderID"}, {"average_quantity_per_order_", "average_quantity"}, {"row_id", "RowID"}, {"ship_date", "ShipDate"}, {"profit", "Profit"}, {"quantity", "Quantity"}, {"ship_mode", "ShipMode"}, {"sales", "Sales"}, {"postal_code_for_order", "PostalCode"}, {"order_date", "OrderDate"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
