@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 
+from server.config import OPENAI_MODEL
 from server.models import WorkflowPlan, WorkflowStep
 from .prompts import PLANNER_SYSTEM_PROMPT
 from .tool_router import ToolRouter
@@ -19,16 +20,17 @@ from .tool_router import ToolRouter
 class PlannerAgent:
     """AI agent that generates execution plans."""
 
-    def __init__(self, api_key: str, tool_router: ToolRouter):
+    def __init__(self, api_key: str, tool_router: ToolRouter, model: str = OPENAI_MODEL):
         """
         Initialize planner agent.
 
         Args:
             api_key: OpenAI API key
             tool_router: Tool router for tool information
+            model: OpenAI model to use for chat completions
         """
         self.client = OpenAI(api_key=api_key)
-        self.model = "gpt-4-turbo-preview"
+        self.model = model
         self.tool_router = tool_router
         self.system_prompt = PLANNER_SYSTEM_PROMPT
 

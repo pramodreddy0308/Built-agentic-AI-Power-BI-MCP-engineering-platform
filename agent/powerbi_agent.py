@@ -5,12 +5,10 @@ Coordinates planning, execution, and validation for autonomous Power BI modifica
 This is the main entry point for the agentic system.
 """
 
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from dotenv import load_dotenv
-
+from server.config import OPENAI_API_KEY, OPENAI_MODEL
 from server.metadata_tools import MetadataTools
 from server.validator import ValidatorTools
 from .planner_agent import PlannerAgent
@@ -39,11 +37,8 @@ class PowerBIAgent:
         """
         self.pbip_root = Path(pbip_root)
 
-        # Load environment variables
-        load_dotenv()
-
-        # Get API key
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        # Get API key from parameter or centralized config
+        self.api_key = api_key or OPENAI_API_KEY
         if not self.api_key:
             raise ValueError("OpenAI API key required")
 
@@ -53,12 +48,12 @@ class PowerBIAgent:
 
         # Initialize MCP components
         self.tool_router = ToolRouter(None)  # MCP client would be injected
-        self.planner = PlannerAgent(self.api_key, self.tool_router)
+        self.planner = PlannerAgent(self.api_key, self.tool_router, model=OPENAI_MODEL)
         self.workflow_engine = WorkflowEngine(self.tool_router)
 
         print("[OK] Power BI Agent initialized")
         print(f"  PBIP Root: {self.pbip_root}")
-        print(f"  Model: GPT-4 Turbo")
+        print(f"  Model: {OPENAI_MODEL}")
 
     def process_request(
         self,

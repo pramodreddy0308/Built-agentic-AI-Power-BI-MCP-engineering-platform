@@ -23,7 +23,7 @@ class VisualType(str, Enum):
     CARD = "card"
     KPI = "kpi"
     GAUGE = "gauge"
-    LINE_CHART = "lineChart"
+    AREA_CHART = "areaChart"
     COLUMN_CHART = "columnChart"
     BAR_CHART = "barChart"
     PIE_CHART = "pieChart"
@@ -106,6 +106,46 @@ class VisualMetadata(BaseModel):
                 "y": 0,
                 "width": 250,
                 "height": 250,
+            }
+        }
+
+
+class SemanticVisualMetadata(BaseModel):
+    """Rich semantic metadata for a visual including bindings and layout."""
+    visual_id: str = Field(..., description="Unique visual identifier")
+    visual_type: str = Field(..., description="Visual type (e.g., lineChart, card, slicer)")
+    title: str = Field(default="", description="Visual title or display name")
+    page_id: str = Field(..., description="Parent page ID")
+    page_name: str = Field(default="", description="Human-readable page name")
+    position: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Position dict with x, y, width, height"
+    )
+    measures: List[str] = Field(
+        default_factory=list,
+        description="Bound measure names (from queryRef/nativeQueryRef)"
+    )
+    categories: List[str] = Field(
+        default_factory=list,
+        description="Bound columns/categories (from projections)"
+    )
+    raw_query: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Raw query state for advanced inspection"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "visual_id": "ec1187e3504704300be7",
+                "visual_type": "areaChart",
+                "title": "Sales by Month",
+                "page_id": "e9d880b5977088da6d5a",
+                "page_name": "Page 1",
+                "position": {"x": 10, "y": 313, "width": 410, "height": 330},
+                "measures": ["Sum of total_sales_"],
+                "categories": ["OrderDate Month"],
+                "raw_query": {},
             }
         }
 

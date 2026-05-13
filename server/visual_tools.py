@@ -256,7 +256,7 @@ class VisualTools:
         Args:
             page_id: Parent page ID
             visual_id: Visual identifier
-            new_visual_type: New visual type (e.g., 'clusteredBar', 'lineChart')
+            new_visual_type: New visual type (e.g., 'clusteredBar', 'areaChart')
             preserve_bindings: Whether to preserve data bindings
 
         Returns:
@@ -270,19 +270,28 @@ class VisualTools:
                 "error": f"Visual not found: {page_id}/{visual_id}",
             }
 
-        # Store bindings if preserving
-        old_bindings = visual.get("bindings", {}) if preserve_bindings else {}
+        # Use raw JSON data for rewriting the file
+        raw_visual = visual.get("raw", {})
+        if not isinstance(raw_visual, dict):
+            return {
+                "success": False,
+                "error": "Raw visual data is malformed",
+            }
 
-        # Create new visual with same properties
-        new_visual = visual.copy()
-        new_visual["visualType"] = new_visual_type
+        # Update nested visual type
+        visual_section = raw_visual.get("visual")
+        if not isinstance(visual_section, dict):
+            visual_section = {}
+            raw_visual["visual"] = visual_section
+
+        visual_section["visualType"] = new_visual_type
 
         # Restore bindings if applicable
-        if preserve_bindings and old_bindings:
-            new_visual["bindings"] = old_bindings
+        if preserve_bindings:
+            raw_visual["bindings"] = visual.get("bindings", {})
 
         # Save changes
-        success = self.parser.save_visual(page_id, visual_id, new_visual)
+        success = self.parser.save_visual(page_id, visual_id, raw_visual)
 
         if not success:
             return {
@@ -295,9 +304,134 @@ class VisualTools:
             "message": f"Visual replaced with type: {new_visual_type}",
             "visual_id": visual_id,
             "page_id": page_id,
-            "old_type": visual.get("visualType", "unknown"),
+            "old_type": visual.get("visual_type", "unknown"),
             "new_type": new_visual_type,
             "bindings_preserved": preserve_bindings,
+        }
+
+    def replace_pie_chart_with_clustered_bar(
+        self, page_id: str, visual_id: str
+    ) -> Dict[str, Any]:
+        """
+        Replace a pie chart with a clustered bar chart.
+
+        Args:
+            page_id: Parent page ID
+            visual_id: Pie chart visual identifier
+
+        Returns:
+            Operation result with conversion details
+        """
+        # Get current visual
+        visual = self.parser.get_visual_details(page_id, visual_id)
+        if not visual:
+            return {
+                "success": False,
+                "error": f"Visual not found: {page_id}/{visual_id}",
+            }
+
+        old_type = visual.get("visual_type", "unknown")
+
+        # Validate it's a pie chart
+        if old_type not in ("pie", "pieChart", "donutChart", "donut"):
+            return {
+                "success": False,
+                "error": f"Visual is not a pie chart (type: {old_type})",
+                "visual_id": visual_id,
+                "page_id": page_id,
+            }
+
+        raw_visual = visual.get("raw", {})
+        if not isinstance(raw_visual, dict):
+            return {
+                "success": False,
+                "error": "Raw visual data is malformed",
+            }
+
+        visual_section = raw_visual.get("visual")
+        if not isinstance(visual_section, dict):
+            visual_section = {}
+            raw_visual["visual"] = visual_section
+
+        visual_section["visualType"] = "clusteredBarChart"
+
+        # Save changes
+        success = self.parser.save_visual(page_id, visual_id, raw_visual)
+
+        if not success:
+            return {
+                "success": False,
+                "error": "Failed to replace pie chart with clustered bar chart",
+            }
+
+        return {
+            "success": True,
+            "message": "Pie chart successfully replaced with clustered bar chart",
+            "visual_id": visual_id,
+            "page_id": page_id,
+            "old_type": old_type,
+            "new_type": "clusteredBarChart",
+        }
+
+    def replace_line_chart_with_area_chart(
+        self, page_id: str, visual_id: str
+    ) -> Dict[str, Any]:
+        """
+        Replace a line chart visual with an area chart.
+
+        Args:
+            page_id: Parent page ID
+            visual_id: Line chart visual identifier
+
+        Returns:
+            Operation result with conversion details
+        """
+        visual = self.parser.get_visual_details(page_id, visual_id)
+        if not visual:
+            return {
+                "success": False,
+                "error": f"Visual not found: {page_id}/{visual_id}",
+            }
+
+        old_type = visual.get("visual_type", "unknown")
+        valid_line_types = {"line", "lineChart", "linechart"}
+
+        if old_type not in valid_line_types:
+            return {
+                "success": False,
+                "error": f"Visual is not a line chart (type: {old_type})",
+                "visual_id": visual_id,
+                "page_id": page_id,
+            }
+
+        raw_visual = visual.get("raw", {})
+        if not isinstance(raw_visual, dict):
+            return {
+                "success": False,
+                "error": "Raw visual data is malformed",
+            }
+
+        visual_section = raw_visual.get("visual")
+        if not isinstance(visual_section, dict):
+            visual_section = {}
+            raw_visual["visual"] = visual_section
+
+        visual_section["visualType"] = "areaChart"
+
+        success = self.parser.save_visual(page_id, visual_id, raw_visual)
+        if not success:
+            return {
+                "success": False,
+                "error": "Failed to replace line chart with area chart",
+            }
+
+        return {
+            "success": True,
+            "message": "Line chart successfully replaced with area chart",
+            "visual_id": visual_id,
+            "page_id": page_id,
+            "old_type": old_type,
+            "new_type": "areaChart",
         }
 
     def duplicate_visual(

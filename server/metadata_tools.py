@@ -70,13 +70,13 @@ class MetadataTools:
 
     def list_visuals(self, page_id: Optional[str] = None) -> Dict[str, Any]:
         """
-        List visuals across the report or for a specific page.
+        List visuals across the report or for a specific page with semantic info.
 
         Args:
             page_id: Optional page identifier filter
 
         Returns:
-            Dictionary containing visuals and visual count
+            Dictionary containing visuals with rich semantic metadata
         """
         visuals = (
             self.parser.get_visuals(page_id)
@@ -87,24 +87,24 @@ class MetadataTools:
         visuals_metadata = []
         for visual in visuals:
             try:
-                page_id_value = visual.get("page_id", "")
-                raw_visual = visual.get("raw", {})
-                visual_type = self._detect_visual_type(raw_visual)
-                position = raw_visual.get("position", {})
-
+                pos = visual.get("position", {})
                 visual_meta = VisualMetadata(
                     visual_id=visual.get("visual_id", ""),
-                    visual_name=raw_visual.get("name", ""),
-                    visual_type=visual_type,
-                    page_id=page_id_value,
-                    title=raw_visual.get("title", ""),
-                    x=position.get("x", 0),
-                    y=position.get("y", 0),
-                    width=position.get("width", 0),
-                    height=position.get("height", 0),
-                    bindings=raw_visual.get("bindings", {}),
+                    visual_name=visual.get("title", ""),  # Use title as display name
+                    visual_type=self._detect_visual_type(visual.get("raw", {})),
+                    page_id=visual.get("page_id", ""),
+                    title=visual.get("title", ""),
+                    x=pos.get("x", 0),
+                    y=pos.get("y", 0),
+                    width=pos.get("width", 0),
+                    height=pos.get("height", 0),
                 )
-                visuals_metadata.append(visual_meta.model_dump())
+                # Extend with semantic info
+                visual_dict = visual_meta.model_dump()
+                visual_dict["page_name"] = visual.get("page_name", "")
+                visual_dict["measures"] = visual.get("measures", [])
+                visual_dict["categories"] = visual.get("categories", [])
+                visuals_metadata.append(visual_dict)
             except Exception as e:
                 print(f"Error processing visual: {e}")
                 continue
@@ -441,6 +441,8 @@ class MetadataTools:
             if "clustered" in visual_type:
                 return VisualType.CLUSTERED_COLUMN
             return VisualType.COLUMN_CHART
+        elif "area" in visual_type:
+            return VisualType.AREA_CHART
         elif "line" in visual_type:
             return VisualType.LINE_CHART
         elif "table" in visual_type:

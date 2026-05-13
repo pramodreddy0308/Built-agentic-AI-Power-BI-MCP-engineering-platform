@@ -180,14 +180,16 @@ class PBIPParser:
 
     def get_visual_details(self, page_id: str, visual_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get detailed information for a specific visual.
+        Get detailed information for a specific visual with semantic metadata.
+
+        Extracts title, visual type, position, bindings, measures, and categories.
 
         Args:
             page_id: Parent page ID
             visual_id: Unique visual identifier
 
         Returns:
-            Visual details or None if not found
+            Rich visual metadata dict or None if not found
         """
         visual_json = (
             self.report_folder
@@ -208,25 +210,55 @@ class PBIPParser:
         except (json.JSONDecodeError, OSError):
             return None
 
+        # Extract semantic information
+        visual_type = self._detect_visual_type(data)
+        title = self._extract_visual_title(data)
+        bindings = self._extract_visual_bindings(data)
+
+        # Get page display name
+        page_details = self.get_page_details(page_id)
+        page_name = ""
+        if page_details and isinstance(page_details, dict):
+            page_name = page_details.get("displayName", page_details.get("name", ""))
+
+        # Extract position
+        position = data.get("position", {})
+        pos_dict = {}
+        if isinstance(position, dict):
+            pos_dict = {
+                "x": position.get("x", 0),
+                "y": position.get("y", 0),
+                "width": position.get("width", 0),
+                "height": position.get("height", 0),
+            }
+
         return {
-            "page_id": page_id,
             "visual_id": visual_id,
-            "visual_type": self._detect_visual_type(data),
+            "visual_type": visual_type,
+            "title": title,
+            "page_id": page_id,
+            "page_name": page_name,
+            "position": pos_dict,
+            "measures": bindings.get("measures", []),
+            "categories": bindings.get("categories", []),
             "raw": data,
         }
 
     def get_all_visuals(self) -> List[Dict[str, Any]]:
         """
-        Recursively discover all visuals across every page in the report.
+        Recursively discover all visuals across every page with semantic metadata.
 
         Returns:
-            List of visual metadata dictionaries with page and visual identifiers.
+            List of rich visual metadata dicts with type, title, bindings, position.
         """
         visuals: List[Dict[str, Any]] = []
         pages_root = self.report_folder / "definition" / "pages"
 
         if not pages_root.exists():
             return visuals
+
+        # Cache page details for reuse
+        page_cache: Dict[str, Optional[Dict[str, Any]]] = {}
 
         for visual_json in pages_root.rglob("visual.json"):
             try:
@@ -235,6 +267,7 @@ class PBIPParser:
             except (json.JSONDecodeError, OSError):
                 continue
 
+            # Extract page_id from path
             visual_id = visual_json.parent.name
             page_id = ""
             if "pages" in visual_json.parts:
@@ -243,11 +276,44 @@ class PBIPParser:
                 if page_index + 1 < len(parts):
                     page_id = parts[page_index + 1]
 
+            # Extract semantic information
+            visual_type = self._detect_visual_type(visual_data)
+            title = self._extract_visual_title(visual_data)
+            bindings = self._extract_visual_bindings(visual_data)
+
+            # Get page display name (with caching)
+            page_name = ""
+            if page_id:
+                if page_id not in page_cache:
+                    page_details = self.get_page_details(page_id)
+                    page_cache[page_id] = page_details
+                page_details = page_cache[page_id]
+                if page_details and isinstance(page_details, dict):
+                    page_name = page_details.get(
+                        "displayName", page_details.get("name", "")
+                    )
+
+            # Extract position
+            position = visual_data.get("position", {})
+            pos_dict = {}
+            if isinstance(position, dict):
+                pos_dict = {
+                    "x": position.get("x", 0),
+                    "y": position.get("y", 0),
+                    "width": position.get("width", 0),
+                    "height": position.get("height", 0),
+                }
+
             visuals.append(
                 {
-                    "page_id": page_id,
                     "visual_id": visual_id,
-                    "visual_type": self._detect_visual_type(visual_data),
+                    "visual_type": visual_type,
+                    "title": title,
+                    "page_id": page_id,
+                    "page_name": page_name,
+                    "position": pos_dict,
+                    "measures": bindings.get("measures", []),
+                    "categories": bindings.get("categories", []),
                     "raw": visual_data,
                 }
             )
@@ -267,12 +333,136 @@ class PBIPParser:
         if not isinstance(visual_data, dict):
             return ""
 
+        # Check nested visual structure first
+        visual_obj = visual_data.get("visual", {})
+        if isinstance(visual_obj, dict):
+            visual_type = visual_obj.get("visualType", "")
+            if visual_type:
+                return visual_type
+
         return (
             visual_data.get("type")
             or visual_data.get("visualType")
             or visual_data.get("chartType")
             or ""
         )
+
+    def _extract_visual_title(self, visual_data: Dict[str, Any]) -> str:
+        """
+        Extract visual title from nested visual definition.
+
+        Searches multiple locations for title text:
+        - visual.name
+        - visual.objects.title
+        - position.name
+        - name field
+
+        Args:
+            visual_data: Raw visual JSON data
+
+        Returns:
+            Title string, or empty if not found
+        """
+        if not isinstance(visual_data, dict):
+            return ""
+
+        # Try direct name field
+        if "name" in visual_data:
+            return str(visual_data["name"])
+
+        # Try nested visual object
+        visual_obj = visual_data.get("visual", {})
+        if isinstance(visual_obj, dict) and "name" in visual_obj:
+            return str(visual_obj["name"])
+
+        # Try objects section (text content)
+        objects = visual_obj.get("objects", {})
+        if isinstance(objects, dict):
+            # Look for title in general properties
+            general = objects.get("general", [])
+            if isinstance(general, list) and len(general) > 0:
+                props = general[0].get("properties", {})
+                if "title" in props:
+                    return str(props["title"])
+            # Look in paragraphs (for textbox)
+            paragraphs = objects.get("paragraphs", [])
+            if isinstance(paragraphs, list) and len(paragraphs) > 0:
+                first_para = paragraphs[0]
+                if isinstance(first_para, dict):
+                    text_runs = first_para.get("textRuns", [])
+                    if isinstance(text_runs, list) and len(text_runs) > 0:
+                        return str(text_runs[0].get("value", ""))
+
+        return ""
+
+    def _extract_visual_bindings(self, visual_data: Dict[str, Any]) -> Dict[str, List[str]]:
+        """
+        Extract measures and categories from visual query state.
+
+        Inspects the queryState structure and extracts projections,
+        mapping queryRef/displayName to measures and categories.
+
+        Args:
+            visual_data: Raw visual JSON data
+
+        Returns:
+            Dict with 'measures' and 'categories' lists
+        """
+        result: Dict[str, List[str]] = {"measures": [], "categories": []}
+
+        if not isinstance(visual_data, dict):
+            return result
+
+        # Navigate to queryState
+        visual_obj = visual_data.get("visual", {})
+        if not isinstance(visual_obj, dict):
+            return result
+
+        query = visual_obj.get("query", {})
+        if not isinstance(query, dict):
+            return result
+
+        query_state = query.get("queryState", {})
+        if not isinstance(query_state, dict):
+            return result
+
+        # Extract from different query state sections
+        for section_name, projections in query_state.items():
+            if not isinstance(projections, dict):
+                continue
+
+            section_projections = projections.get("projections", [])
+            if not isinstance(section_projections, list):
+                continue
+
+            for proj in section_projections:
+                if not isinstance(proj, dict):
+                    continue
+
+                # Get display name or queryRef
+                display_name = proj.get("displayName", "")
+                native_query_ref = proj.get("nativeQueryRef", "")
+                query_ref = proj.get("queryRef", "")
+
+                # Prefer displayName, fallback to nativeQueryRef, then queryRef
+                label = display_name or native_query_ref or query_ref or ""
+
+                if not label:
+                    continue
+
+                # Categorize as measure or category based on field type
+                field_obj = proj.get("field", {})
+                if not isinstance(field_obj, dict):
+                    result["categories"].append(label)
+                    continue
+
+                # Check if it's a measure (Aggregation) or category (Column/HierarchyLevel)
+                if "Measure" in field_obj or "Aggregation" in field_obj:
+                    result["measures"].append(label)
+                else:
+                    result["categories"].append(label)
+
+        return result
 
     def get_tables(self) -> List[Dict[str, Any]]:
         """

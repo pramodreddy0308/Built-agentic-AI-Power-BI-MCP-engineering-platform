@@ -10,6 +10,8 @@ import os
 import sys
 from pathlib import Path
 
+from server.config import OPENAI_MODEL, PBIP_ROOT, validate_environment
+
 def check_dependencies():
     """Check if all required dependencies are installed."""
     print("Checking dependencies...")
@@ -43,27 +45,16 @@ def check_dependencies():
 def check_environment():
     """Check environment configuration."""
     print("\nChecking environment...")
-    
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    # Check OPENAI_API_KEY
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        print("  [OK] OPENAI_API_KEY configured")
-    else:
-        print("  [MISSING] OPENAI_API_KEY not configured")
-        print("    Set in .env file: OPENAI_API_KEY=sk-...")
+
+    validation = validate_environment()
+    if not validation["success"]:
+        for error in validation["errors"]:
+            print(f"  [ERROR] {error}")
         return False
-    
-    # Check PBIP_ROOT
-    pbip_root = Path(os.getenv("PBIP_ROOT", "."))
-    if pbip_root.exists():
-        print(f"  [OK] PBIP_ROOT exists: {pbip_root}")
-    else:
-        print(f"  [MISSING] PBIP_ROOT not found: {pbip_root}")
-        return False
-    
+
+    print("  [OK] OPENAI_API_KEY configured")
+    print(f"  [OK] OPENAI_MODEL: {OPENAI_MODEL}")
+    print(f"  [OK] PBIP_ROOT exists: {PBIP_ROOT}")
     return True
 
 
@@ -73,10 +64,8 @@ def test_agent():
     
     try:
         from agent.powerbi_agent import PowerBIAgent
-        from pathlib import Path
         
-        pbip_root = Path(os.getenv("PBIP_ROOT", "."))
-        agent = PowerBIAgent(pbip_root)
+        agent = PowerBIAgent(PBIP_ROOT)
         
         print("  [OK] Agent initialized")
         
@@ -109,10 +98,8 @@ def start_interactive():
     
     try:
         from agent.powerbi_agent import PowerBIAgent
-        from pathlib import Path
         
-        pbip_root = Path(os.getenv("PBIP_ROOT", "."))
-        agent = PowerBIAgent(pbip_root)
+        agent = PowerBIAgent(PBIP_ROOT)
         agent.interactive_mode()
         
     except Exception as e:
@@ -171,10 +158,8 @@ def test_request():
     print("\nRunning test request...")
     
     from agent.powerbi_agent import PowerBIAgent
-    from pathlib import Path
     
-    pbip_root = Path(os.getenv("PBIP_ROOT", "."))
-    agent = PowerBIAgent(pbip_root)
+    agent = PowerBIAgent(PBIP_ROOT)
     
     # Use a simple test request
     request = "Provide a summary of the current report"

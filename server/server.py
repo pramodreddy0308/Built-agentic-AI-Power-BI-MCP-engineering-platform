@@ -9,20 +9,17 @@ import os
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
+from server.config import PBIP_ROOT as CONFIG_PBIP_ROOT
 from .metadata_tools import MetadataTools
 from .dax_tools import DAXTools
 from .visual_tools import VisualTools
 from .git_tools import GitTools
 from .validator import ValidatorTools
 
-# Load environment variables
-load_dotenv()
-
-# Get PBIP root from environment or use current directory
-PBIP_ROOT = Path(os.getenv("PBIP_ROOT", ".")).resolve()
+# Use centralized PBIP root from server.config
+PBIP_ROOT = CONFIG_PBIP_ROOT
 
 # Initialize MCP server
 mcp = FastMCP("power-bi-agent")
